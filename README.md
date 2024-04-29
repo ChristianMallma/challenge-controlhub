@@ -25,5 +25,5 @@ pip install -r requirements.txt
 
 3. Run project:
 ```
-uvicorn app.main:app --reload
+docker-compose -p controlhub-challenge up
 ```
