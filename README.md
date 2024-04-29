@@ -8,7 +8,7 @@ Our Frontend dev specifically asked for these endpoints for the students to use:
 # Considerations
  This project has the following considerations:
 - Simulate the data using a static data
-- Developed up to CRUD of courses (lessons and questions are missing)
+- Add configuration for docker (including postgres, but implementation is missing at this time)
 
 
 # Steps for run this project
