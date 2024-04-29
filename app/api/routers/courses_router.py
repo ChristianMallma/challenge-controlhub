@@ -1,22 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
+
+from app.api.dbs import fake_course_db
 from app.models.course import Course
 
 router = APIRouter()
-
-# Static data
-fake_course_db = [
-    {
-        "id": 1,
-        "title": "Introduction to Python",
-        "description": "Learn the basics of Python."
-    },
-    {
-        "id": 2,
-        "title": "Data Science with Python",
-        "description": "Introduction to data science concepts."
-    },
-]
 
 
 @router.get("/courses", response_model=List[Course])

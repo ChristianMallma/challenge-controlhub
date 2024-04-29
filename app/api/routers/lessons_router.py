@@ -1,29 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
+from app.api.dbs import fake_lesson_db, fake_course_db
 from app.models.lesson import Lesson
-from app.models.question import Question
-from app.models.answer import Answer
 
 router = APIRouter()
 
-# Static data
-fake_lesson_db = [
-    {
-        "id": 1,
-        "title": "Lesson 1",
-        "course_id": 1,
-        "description": "Introduction to Python Basics"
-    },
-    {
-        "id": 2,
-        "title": "Lesson 2",
-        "course_id": 1,
-        "description": "Advanced Python Techniques"
-    },
-]
 
-
+# Get lessons by id course
 @router.get("/courses/{course_id}/lessons", response_model=List[Lesson])
 def get_lessons_for_course(course_id: int):
     lessons = [lesson for lesson in fake_lesson_db if lesson["course_id"] == course_id]
@@ -32,45 +16,35 @@ def get_lessons_for_course(course_id: int):
     return lessons
 
 
-# Stacic data of questions
-fake_question_db = [
-    {
-        "id": 1,
-        "text": "What is Python?",
-        "lesson_id": 1,
-        "options": ["Programming language", "Snake"],
-        "correct_answer": ["Programming language"]
-    },
-    {
-        "id": 2,
-        "text": "Which data type is mutable in Python?",
-        "lesson_id": 1,
-        "options": ["list", "tuple"],
-        "correct_answer": ["list"]
-    }
-]
+# Create lesson
+@router.post("/courses/{course_id}/lessons", response_model=Lesson)
+def create_lesson(course_id: int, lesson: Lesson):
+    if not any(course['id'] == course_id for course in fake_course_db):
+        raise HTTPException(status_code=404, detail="Course not found")
+    new_id = max((l['id'] for l in fake_lesson_db if l['course_id'] == course_id), default=0) + 1
+    new_lesson = lesson.dict()
+    new_lesson['id'] = new_id
+    new_lesson['course_id'] = course_id
+    fake_lesson_db.append(new_lesson)
+    return new_lesson
 
 
-@router.get("/lessons/{lesson_id}", response_model=Lesson)
-def get_lesson_details(lesson_id: int):
-    lesson = next((lesson for lesson in fake_lesson_db if lesson["id"] == lesson_id), None)
-    if not lesson:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    questions = [Question(**question) for question in fake_question_db if question["lesson_id"] == lesson_id]
-    return {**lesson, "questions": questions}
+# Update lesson
+@router.put("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson)
+def update_lesson(course_id: int, lesson_id: int, lesson: Lesson):
+    for idx, existing_lesson in enumerate(fake_lesson_db):
+        if existing_lesson['id'] == lesson_id and existing_lesson['course_id'] == course_id:
+            updated_lesson = {**existing_lesson, **lesson.dict(), "id": lesson_id, "course_id": course_id}
+            fake_lesson_db[idx] = updated_lesson
+            return updated_lesson
+    raise HTTPException(status_code=404, detail="Lesson not found")
 
 
-@router.post("/lessons/{lesson_id}/take")
-async def take_lesson(lesson_id: int, answers: List[Answer]):
-    correct_count = 0
-    for answer in answers:
-        correct_answer = next((q['correct_answer'] for q in fake_question_db if q['id'] == answer.question_id), None)
-        if correct_answer is None:
-            raise HTTPException(status_code=404, detail=f"No question found with ID {answer.question_id}")
-        if set(answer.selected_options) == set(correct_answer):
-            correct_count += 1
-
-    total_questions = len([q for q in fake_question_db if q['lesson_id'] == lesson_id])
-    is_passed = correct_count >= (total_questions * 0.7)  # Assuming the aprobation umbral is 70%
-
-    return {"total_questions": total_questions, "correct_answers": correct_count, "passed": is_passed}
+# Delete lesson
+@router.delete("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson)
+def delete_lesson(course_id: int, lesson_id: int):
+    for idx, existing_lesson in enumerate(fake_lesson_db):
+        if existing_lesson['id'] == lesson_id and existing_lesson['course_id'] == course_id:
+            removed_lesson = fake_lesson_db.pop(idx)
+            return removed_lesson
+    raise HTTPException(status_code=404, detail="Lesson not found")
