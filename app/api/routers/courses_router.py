@@ -9,11 +9,17 @@ router = APIRouter()
 
 @router.get("/courses", response_model=List[Course])
 def get_courses():
+    """
+    Get all courses
+    """
     return fake_course_db
 
 
 @router.post("/courses", response_model=Course)
 def create_course(new_course: Course):
+    """
+    Create a new course
+    """
     new_id = max(course.get('id') for course in fake_course_db) + 1
     new_course = new_course.dict()
     new_course['id'] = new_id
@@ -23,6 +29,9 @@ def create_course(new_course: Course):
 
 @router.put("/courses/{course_id}", response_model=Course)
 def update_course(course_id: int, new_course_data: Course):
+    """
+    Get course by course id
+    """
     for idx, existing_course in enumerate(fake_course_db):
         if existing_course["id"] == course_id:
             updated_existing_course = {**existing_course, **new_course_data.dict(), "id": course_id}
@@ -33,6 +42,9 @@ def update_course(course_id: int, new_course_data: Course):
 
 @router.delete("/courses/{course_id}", response_model=Course)
 def delete_course(course_id: int):
+    """
+    Delete course by course id
+    """
     for idx, existing_course in enumerate(fake_course_db):
         if existing_course["id"] == course_id:
             removed_course = fake_course_db.pop(idx)

@@ -4,7 +4,7 @@ from .question import Question
 
 
 class Lesson(BaseModel):
-    id: int = Field(None, description="The id of the lesson. Generated in the server.")
+    id: int = Field(None, description="The lesson id. Generated in the server.")
     title: str = Field(..., description="The title of the lesson.")
     course_id: int = Field(None, description="The id of the course.")
     description: str = Field(..., description="A lesson description.")

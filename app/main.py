@@ -1,5 +1,3 @@
-# /app/main.py
-
 from fastapi import FastAPI
 
 from app.api.routers.courses_router import router as courses_router

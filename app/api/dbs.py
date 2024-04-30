@@ -1,4 +1,8 @@
-# Static data
+"""
+This fake data needs to be changed in the future commits -> replace it with Postgresl
+"""
+
+# TODO: Static data for courses
 fake_course_db = [
     {
         "id": 1,
@@ -13,7 +17,7 @@ fake_course_db = [
 ]
 
 
-# Stacic data of questions
+# TODO: Static data for questions
 fake_question_db = [
     {
         "id": 1,
@@ -32,7 +36,7 @@ fake_question_db = [
 ]
 
 
-# Static data
+# TODO: Static data for lessons
 fake_lesson_db = [
     {
         "id": 1,
