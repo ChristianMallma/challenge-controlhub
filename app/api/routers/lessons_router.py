@@ -1,58 +1,58 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from app.api.dbs import fake_lesson_db, fake_course_db
-from app.models.lesson import Lesson
+from app.schemas.lesson import Lesson
+from app.services.lessons_service import get_lessons_by_course, create_new_lesson, update_existing_lesson, \
+    delete_existing_lesson
 
 router = APIRouter()
 
 
-@router.get("/courses/{course_id}/lessons", response_model=List[Lesson])
+@router.get("/courses/{course_id}/lessons", response_model=List[Lesson], tags=["Lesson"])
 def get_lessons_for_course(course_id: int):
     """
     Get lessons by course id
     """
-    lessons = [lesson for lesson in fake_lesson_db if lesson["course_id"] == course_id]
+    lessons = get_lessons_by_course(course_id)
     if not lessons:
         raise HTTPException(status_code=404, detail="Course not found or no lessons available")
     return lessons
 
 
-@router.post("/courses/{course_id}/lessons", response_model=Lesson)
+@router.post("/courses/{course_id}/lessons", response_model=Lesson, tags=["Lesson"])
 def create_lesson(course_id: int, lesson: Lesson):
     """
     Create a new lesson
     """
-    if not any(course['id'] == course_id for course in fake_course_db):
+    new_lesson = create_new_lesson(course_id, lesson)
+
+    if not new_lesson:
         raise HTTPException(status_code=404, detail="Course not found")
-    new_id = max((l['id'] for l in fake_lesson_db if l['course_id'] == course_id), default=0) + 1
-    new_lesson = lesson.dict()
-    new_lesson['id'] = new_id
-    new_lesson['course_id'] = course_id
-    fake_lesson_db.append(new_lesson)
+
     return new_lesson
 
 
-@router.put("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson)
+@router.put("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson, tags=["Lesson"])
 def update_lesson(course_id: int, lesson_id: int, lesson: Lesson):
     """
     Update lesson by lesson id
     """
-    for idx, existing_lesson in enumerate(fake_lesson_db):
-        if existing_lesson['id'] == lesson_id and existing_lesson['course_id'] == course_id:
-            updated_lesson = {**existing_lesson, **lesson.dict(), "id": lesson_id, "course_id": course_id}
-            fake_lesson_db[idx] = updated_lesson
-            return updated_lesson
-    raise HTTPException(status_code=404, detail="Lesson not found")
+    updated_lesson = update_existing_lesson(course_id, lesson_id, lesson)
+
+    if not updated_lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    return updated_lesson
 
 
-@router.delete("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson)
+@router.delete("/courses/{course_id}/lessons/{lesson_id}", response_model=Lesson, tags=["Lesson"])
 def delete_lesson(course_id: int, lesson_id: int):
     """
     Delete lesson by lesson id
     """
-    for idx, existing_lesson in enumerate(fake_lesson_db):
-        if existing_lesson['id'] == lesson_id and existing_lesson['course_id'] == course_id:
-            removed_lesson = fake_lesson_db.pop(idx)
-            return removed_lesson
-    raise HTTPException(status_code=404, detail="Lesson not found")
+    removed_lesson = delete_existing_lesson(course_id, lesson_id)
+
+    if not removed_lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    return removed_lesson

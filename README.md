@@ -13,19 +13,18 @@ Our Frontend dev specifically asked for these endpoints for the students to use:
 
 # Steps for run this project
 
-1. Create and environment:
-```
-python3 -m venv venv
-```
+1. Clone the project
 
-2. Install dependencies:
-```
-pip install -r requirements.txt
-```
-
-3. Run project:
+2. Run project:
 ```
 docker-compose -p controlhub-challenge up
+```
+
+3. APIs documentation
+```
+http://localhost:8000/docs
+
+http://localhost:8000/redoc
 ```
 
 # TEST ENDPOINTS -> examples:  

@@ -1,97 +1,89 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from app.api.dbs import fake_lesson_db, fake_question_db
-from app.models.question import Question
-from app.models.answer import Answer
-from app.models.lesson import Lesson
+from app.schemas.question import Question
+from app.schemas.answer import Answer
+from app.schemas.lesson import Lesson
+from app.services.questions_service import create_new_question, update_existing_question, delete_existing_question, \
+    get_questions_by_lesson_id, get_lesson_details_by_lesson_id, submit_answers
 
 router = APIRouter()
 
 
-@router.post("/lessons/{lesson_id}/questions", response_model=Question)
+@router.post("/lessons/{lesson_id}/questions", response_model=Question, tags=["Question"])
 def create_question(lesson_id: int, question: Question):
     """
     Create a new question
     """
-    if not any(lesson['id'] == lesson_id for lesson in fake_lesson_db):
+    new_question = create_new_question(lesson_id, question)
+
+    if not new_question:
         raise HTTPException(status_code=404, detail="Lesson not found")
-    new_id = max((q['id'] for q in fake_question_db if q['lesson_id'] == lesson_id), default=0) + 1
-    new_question = question.dict()
-    new_question['id'] = new_id
-    new_question['lesson_id'] = lesson_id
-    fake_question_db.append(new_question)
+
     return new_question
 
 
-@router.put("/lessons/{lesson_id}/questions/{question_id}", response_model=Question)
+@router.put("/lessons/{lesson_id}/questions/{question_id}", response_model=Question, tags=["Question"])
 def update_question(lesson_id: int, question_id: int, question: Question):
     """
     Update a question by question id
     """
-    for idx, existing_question in enumerate(fake_question_db):
-        if existing_question['id'] == question_id and existing_question['lesson_id'] == lesson_id:
-            updated_question = {**existing_question, **question.dict(), "id": question_id, "lesson_id": lesson_id}
-            fake_question_db[idx] = updated_question
-            return updated_question
-    raise HTTPException(status_code=404, detail="Question not found")
+    updated_question = update_existing_question(lesson_id, question_id, question)
+
+    if not updated_question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    return updated_question
 
 
-@router.delete("/lessons/{lesson_id}/questions/{question_id}", response_model=Question)
+@router.delete("/lessons/{lesson_id}/questions/{question_id}", response_model=Question, tags=["Question"])
 def delete_question(lesson_id: int, question_id: int):
     """
     Delete question by question id
     """
-    for idx, existing_question in enumerate(fake_question_db):
-        if existing_question['id'] == question_id and existing_question['lesson_id'] == lesson_id:
-            removed_question = fake_question_db.pop(idx)
-            return removed_question
-    raise HTTPException(status_code=404, detail="Question not found")
+    removed_question = delete_existing_question(lesson_id, question_id)
+
+    if not removed_question:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    return removed_question
 
 
-@router.get("/lessons/{lesson_id}/questions", response_model=List[Question])
+@router.get("/lessons/{lesson_id}/questions", response_model=List[Question], tags=["Question"])
 def get_questions(lesson_id: int):
     """
     Get all questions by lesson id
     """
-    return [question for question in fake_question_db if question['lesson_id'] == lesson_id]
+    questions = get_questions_by_lesson_id(lesson_id)
+    return questions
 
 
 # LESSONS DETAILS - TAKE LESSON
 
-@router.get("/lessons/{lesson_id}", response_model=Lesson)
+@router.get("/lessons/{lesson_id}", response_model=Lesson, tags=["Question"])
 def get_lesson_details(lesson_id: int):
     """
     Get lesson details:
     - Show questions by lesson
     """
-    lesson = next((lesson for lesson in fake_lesson_db if lesson["id"] == lesson_id), None)
-    if not lesson:
+    lesson_details = get_lesson_details_by_lesson_id(lesson_id)
+
+    if not lesson_details:
         raise HTTPException(status_code=404, detail="Lesson not found")
-    questions = [Question(**question) for question in fake_question_db if question["lesson_id"] == lesson_id]
-    return {**lesson, "questions": questions}
+
+    return lesson_details
 
 
-@router.post("/lessons/{lesson_id}/take")
+@router.post("/lessons/{lesson_id}/take", tags=["Submit Answer"])
 async def take_lesson(lesson_id: int, answers: List[Answer]):
     """
     Submit answers to a lesson
 
     Assuming the aprobation umbral is 60% (APROBATION_UMBRAL=0.6)
     """
-    correct_count = 0
-    APROBATION_UMBRAL = 0.6
+    submit_answer = submit_answers(lesson_id, answers)
 
-    for answer in answers:
-        correct_answer = next((q['correct_answer'] for q in fake_question_db if q['id'] == answer.question_id), None)
+    if not submit_answer:
+        raise HTTPException(status_code=404, detail=f"No question found for some question id")
 
-        if correct_answer is None:
-            raise HTTPException(status_code=404, detail=f"No question found with ID {answer.question_id}")
-
-        if set(answer.selected_options) == set(correct_answer):
-            correct_count += 1
-
-    total_questions = len([q for q in fake_question_db if q['lesson_id'] == lesson_id])
-    is_passed = correct_count >= (total_questions * APROBATION_UMBRAL)
-
-    return {"total_questions": total_questions, "correct_answers": correct_count, "passed": is_passed}
+    return submit_answer
